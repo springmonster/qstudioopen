@@ -3,41 +3,41 @@ package com.timestored.cstore;
 import java.util.Iterator;
 
 /**
- * Interface describing a column oriented table 
+ * Interface describing a column oriented table
  */
 public interface CTable {
 
-	int getRowCount();
+    int getRowCount();
 
-	int getColumnCount();
+    int getColumnCount();
 
-	Object getValueAt(int row, int col);
-	
-	Object getDoubleAt(int row, int col);
+    Object getValueAt(int row, int col);
 
-	String getColumnName(int col);
+    Object getDoubleAt(int row, int col);
 
-	Object getColumn(int col);
+    String getColumnName(int col);
 
-	int getTypeNum(int col);
+    Object getColumn(int col);
 
-	int getKeyColumnCount();
+    int getTypeNum(int col);
 
-	CAtomTypes getType(int col);
+    int getKeyColumnCount();
 
-	Iterator<CColumn> getColumns();
+    CAtomTypes getType(int col);
 
-	Iterator<CColumn> getKeyColumns();
+    Iterator<CColumn> getColumns();
 
-	Iterator<CColumn> getNonKeyColumns();
+    Iterator<CColumn> getKeyColumns();
 
-	String getRowTitle(int row);
+    Iterator<CColumn> getNonKeyColumns();
 
-	String getKeysTitle();
+    String getRowTitle(int row);
 
-	CColumn getColumn(String name);
+    String getKeysTitle();
 
-	int getColumnIndex(String name);
+    CColumn getColumn(String name);
 
-	boolean isKeyed();
+    int getColumnIndex(String name);
+
+    boolean isKeyed();
 }

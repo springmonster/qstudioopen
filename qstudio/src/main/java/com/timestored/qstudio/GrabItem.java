@@ -11,25 +11,34 @@ import com.timestored.theme.Icon;
  */
 class GrabItem {
 
-	private final Component component;
-	private final String title;
-	private final Icon icon;
-	
-	public GrabItem(Component component, String title, Icon icon) {
-		this.component = Preconditions.checkNotNull(component);
-		this.title = Preconditions.checkNotNull(title);
-		this.icon = icon;
-	}
+    private final Component component;
+    private final String title;
+    private final Icon icon;
 
-	public GrabItem(java.awt.Component component, String title) {
-		this(component, title, null);
-	}
-	
-	Component getComponent() { return component; }
-	String getTitle() { return title; }
+    public GrabItem(Component component, String title, Icon icon) {
+        this.component = Preconditions.checkNotNull(component);
+        this.title = Preconditions.checkNotNull(title);
+        this.icon = icon;
+    }
 
-	/** @return icon if one is set otherwise null **/
-	Icon getIcon() { return icon; }
+    public GrabItem(java.awt.Component component, String title) {
+        this(component, title, null);
+    }
 
-	
+    Component getComponent() {
+        return component;
+    }
+
+    String getTitle() {
+        return title;
+    }
+
+    /**
+     * @return icon if one is set otherwise null
+     **/
+    Icon getIcon() {
+        return icon;
+    }
+
+
 }

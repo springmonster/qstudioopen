@@ -49,264 +49,281 @@ import com.timestored.theme.Theme;
  * elements.
  */
 public class ServerTreePanel extends JPanel {
-	
-	private static final long serialVersionUID = 1L;
-	
-	private final ObjectTreePanel objectTreePanel;
-	private final ServerListPanel serverListPanel;
-	
-	public ServerTreePanel(final AdminModel adminModel, 
-			final QueryManager queryManager,
-			final CommonActions commonActions,
-			OpenDocumentsModel openDocumentsModel, JFrame parentFrame) {
 
-		serverListPanel = new ServerListPanel(adminModel, commonActions, parentFrame);
-		objectTreePanel = new ObjectTreePanel(adminModel, queryManager, openDocumentsModel);
+    private static final long serialVersionUID = 1L;
 
-		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, 
-				serverListPanel, objectTreePanel);
-		splitPane.setResizeWeight(0.4);
-		
-		setLayout(new BorderLayout());
-		add(splitPane);
-		
-	}
-	
-	@Override public void setTransferHandler(TransferHandler newHandler) {
-		serverListPanel.setTransferHandler(newHandler);
-		super.setTransferHandler(newHandler);
-	}
+    private final ObjectTreePanel objectTreePanel;
+    private final ServerListPanel serverListPanel;
 
-	public void setHiddenNamespaces(Set<String> hiddenNS) {
-		objectTreePanel.setHiddenNamespaces(hiddenNS);
-	}
+    public ServerTreePanel(final AdminModel adminModel,
+                           final QueryManager queryManager,
+                           final CommonActions commonActions,
+                           OpenDocumentsModel openDocumentsModel, JFrame parentFrame) {
+
+        serverListPanel = new ServerListPanel(adminModel, commonActions, parentFrame);
+        objectTreePanel = new ObjectTreePanel(adminModel, queryManager, openDocumentsModel);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                serverListPanel, objectTreePanel);
+        splitPane.setResizeWeight(0.4);
+
+        setLayout(new BorderLayout());
+        add(splitPane);
+
+    }
+
+    @Override
+    public void setTransferHandler(TransferHandler newHandler) {
+        serverListPanel.setTransferHandler(newHandler);
+        super.setTransferHandler(newHandler);
+    }
+
+    public void setHiddenNamespaces(Set<String> hiddenNS) {
+        objectTreePanel.setHiddenNamespaces(hiddenNS);
+    }
 }
 
 /**
- * Displays the objects that exist on a single {@link ServerModel} to update 
+ * Displays the objects that exist on a single {@link ServerModel} to update
  * the display you must manually call {@link #refreshGui()}.
  */
 class ObjectTreePanel extends JPanel {
 
-	private static final long serialVersionUID = 1L;
-	
-	private JTree tree;
-	private Set<String> hiddenNS;
+    private static final long serialVersionUID = 1L;
 
-	private final AdminModel adminModel;
-	private final QueryManager queryManager;
-	private final OpenDocumentsModel openDocumentsModel;
-	// variable used to make expanding default namespace nodes easier
-	private final List<DefaultMutableTreeNode> defaultNSnodes = new ArrayList<DefaultMutableTreeNode>();
+    private JTree tree;
+    private Set<String> hiddenNS;
 
-	
-	private ServerModel curServerModel;
-
-	public ObjectTreePanel(AdminModel adminModel, QueryManager queryManager,
-			OpenDocumentsModel openDocumentsModel) {
-		
-		this.adminModel = adminModel;
-		this.queryManager = queryManager;
-		this.openDocumentsModel = openDocumentsModel;
-		setLayout(new BorderLayout(GAP,GAP));
-		
-		adminModel.addListener(new AdminModel.Listener() {
-			
-			@Override public void selectionChanged(ServerModel serverModel, Category category,
-					String namespace, QEntity element) { 
-				if(serverModel != curServerModel) { refreshGui(); }
-			}
-			
-			@Override public void modelChanged() { refreshGui();  }
-			@Override public void modelChanged(ServerModel sm) {  refreshGui(); }
-		});
-		refreshGui();
-	}
-	
-	private void refreshGui() {
-		
-		EventQueue.invokeLater(new Runnable() {
-			@Override public void run() {
-				DefaultMutableTreeNode top = new DefaultMutableTreeNode();
-				defaultNSnodes.clear();
-				curServerModel = adminModel.getServerModel();
-				if(curServerModel!=null) {
-					ServerObjectTree soTree = curServerModel.getServerObjectTree();
-					if (soTree != null) {
-						addNodes(top, curServerModel, soTree, hiddenNS);
-					}
-				}
-				
-				tree = new JTree(top);   
-				JScrollPane treeView = new JScrollPane(tree); 
-				tree.setBorder(CENTRE_BORDER);
-				CustomNode.configure(tree);
-
-				// expand the default node folders
-				for (DefaultMutableTreeNode dmtNode : defaultNSnodes) {
-					// within default namespace expand functions / variables.
-					tree.expandPath(new TreePath(dmtNode.getPath()));
-				}
-				
-				removeAll();
-				add(treeView, BorderLayout.CENTER);
-				revalidate();
-			}
-		});
-		
-	}
-	
-
-	
-	public void setHiddenNamespaces(Set<String> hiddenNS) {
-		this.hiddenNS = hiddenNS;
-		refreshGui();
-	}
+    private final AdminModel adminModel;
+    private final QueryManager queryManager;
+    private final OpenDocumentsModel openDocumentsModel;
+    // variable used to make expanding default namespace nodes easier
+    private final List<DefaultMutableTreeNode> defaultNSnodes = new ArrayList<DefaultMutableTreeNode>();
 
 
-	private void addNodes(DefaultMutableTreeNode top, ServerModel sm,
-			ServerObjectTree kdbServerObjects, Set<String> hiddenNS) {
+    private ServerModel curServerModel;
 
-		String serverName = sm.getName();
-		String[] namespaces = kdbServerObjects.getNamespaces().toArray(new String[]{});
-		Arrays.sort(namespaces);
-		
-		for(String ns : namespaces) {
-			
-			if(!hiddenNS.contains(ns)) {
-			
-				NamespaceNode nsNode = new NamespaceNode(ns, sm.getServerConfig());
-				DefaultMutableTreeNode nsTree = new DefaultMutableTreeNode(nsNode, true);
-				if(ns.equals(".")) {
-					defaultNSnodes.add(nsTree);
-				}
-				for(TableSQE ed : kdbServerObjects.getTables(ns)) {
+    public ObjectTreePanel(AdminModel adminModel, QueryManager queryManager,
+                           OpenDocumentsModel openDocumentsModel) {
 
-					DefaultMutableTreeNode branch = new DefaultMutableTreeNode(new ServerQEntityNode(serverName, ed));
-					int i = ed.isPartitioned() ? 0 : 1;
-					for(String cn : ed.getColNames()) {
-						ColNode colNode = new ColNode(queryManager, adminModel, sm, ed, cn, i++==0);
-						branch.add(new DefaultMutableTreeNode(colNode));
-					}
-					nsTree.add(branch);
-				}
-				for(ServerQEntity ed : kdbServerObjects.getViews(ns)) {
-					nsTree.add(new DefaultMutableTreeNode(new ServerQEntityNode(serverName, ed)));
-				}
-				nsTree.add(getBranch(serverName, "Functions", kdbServerObjects.getFunctions(ns)));
-				nsTree.add(getBranch(serverName, "Variables", kdbServerObjects.getVariables(ns)));
-				top.add(nsTree);
-			}
-		}
-	}
-	
+        this.adminModel = adminModel;
+        this.queryManager = queryManager;
+        this.openDocumentsModel = openDocumentsModel;
+        setLayout(new BorderLayout(GAP, GAP));
 
-	/** Represents KDB namespace */
-	private class NamespaceNode extends CustomNode {
-		private final String ns;
-		private final ServerConfig serverConfig;
+        adminModel.addListener(new AdminModel.Listener() {
 
-		public NamespaceNode(String ns, ServerConfig serverConfig) {
-			super(ns);
-			this.ns = ns;
-			this.serverConfig = serverConfig;
-		}
+            @Override
+            public void selectionChanged(ServerModel serverModel, Category category,
+                                         String namespace, QEntity element) {
+                if (serverModel != curServerModel) {
+                    refreshGui();
+                }
+            }
 
-		@Override public void doSelectionAction() {
-			adminModel.setSelectedNamespace(serverConfig.getName(), ns);
-		}
-		
-		@Override public void addMenuItems(JPopupMenu menu) {
-			QQuery qq = new QQuery("Delete all variables from Namespace", 
-					Theme.CIcon.DELETE, "delete from `" + ns);
-			addScriptMenu(menu, ImmutableList.of(qq));
-		}
-	}
+            @Override
+            public void modelChanged() {
+                refreshGui();
+            }
 
-	
-	/** Tree node for an object that exists on the server */
-	private class ServerQEntityNode extends CustomNode {
+            @Override
+            public void modelChanged(ServerModel sm) {
+                refreshGui();
+            }
+        });
+        refreshGui();
+    }
 
-		private final ServerQEntity sqe;
-		private final String serverName;
+    private void refreshGui() {
 
-		public ServerQEntityNode(String serverName, ServerQEntity sqe) {
-			super(sqe.getName(), sqe.getHtmlDoc(true), sqe.getIcon());
-			this.sqe = sqe;
-			this.serverName = serverName;
-			if(sqe.getType().isList()) {
-				setText("<html><b>" + sqe.getName() + "</b></html>");
-			}
-		}
+        EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                DefaultMutableTreeNode top = new DefaultMutableTreeNode();
+                defaultNSnodes.clear();
+                curServerModel = adminModel.getServerModel();
+                if (curServerModel != null) {
+                    ServerObjectTree soTree = curServerModel.getServerObjectTree();
+                    if (soTree != null) {
+                        addNodes(top, curServerModel, soTree, hiddenNS);
+                    }
+                }
 
-		@Override public void doSelectionAction() {
-			adminModel.setSelectedElement(serverName, sqe.getNamespace(), sqe);
-		}
-		
-		@Override public void addMenuItems(JPopupMenu menu) {
-			addScriptMenu(menu, sqe.getQQueries());
-		}
-	}
-	
+                tree = new JTree(top);
+                JScrollPane treeView = new JScrollPane(tree);
+                tree.setBorder(CENTRE_BORDER);
+                CustomNode.configure(tree);
 
-	/**
-	 * Add a menu with the qquery actions and a separate sub menu that scripts them qQueries
-	 * to the current editor.
-	 * @param qQueries The q queries that will each have a menuItem added.
-	 */
-	private void addScriptMenu(JPopupMenu menu, List<QQuery> qQueries) {
-		if(qQueries.size()>0) {
-			JMenu scriptToWindowMenu = new JMenu("Script to Editor");
-			scriptToWindowMenu.setIcon(Theme.CIcon.PAGE_CODE.get16());
-			for(QQuery qquery : qQueries) {
-				menu.add(new JMenuItem(new ElementAction(qquery, false)));
-				scriptToWindowMenu.add(new JMenuItem(new ElementAction(qquery, true)));
-			}
-			menu.add(scriptToWindowMenu);
-		}
-	}
+                // expand the default node folders
+                for (DefaultMutableTreeNode dmtNode : defaultNSnodes) {
+                    // within default namespace expand functions / variables.
+                    tree.expandPath(new TreePath(dmtNode.getPath()));
+                }
 
-	private DefaultMutableTreeNode getBranch(String serverName, String branchTitle, 
-			List<ServerQEntity> elements) {
-		
-		DefaultMutableTreeNode branch = new DefaultMutableTreeNode(branchTitle);
-		for(ServerQEntity ed : elements) {
-			branch.add(new DefaultMutableTreeNode(new ServerQEntityNode(serverName, ed)));
-		}
-		return branch;
-	}
+                removeAll();
+                add(treeView, BorderLayout.CENTER);
+                revalidate();
+            }
+        });
 
-	
-	private class ElementAction extends AbstractAction {
-		
-		private static final long serialVersionUID = 1L;
-		private final String query;
-		private final boolean insertText;
-		
-		public ElementAction(QQuery qquery, boolean insertText) {
-			
-			super(qquery.getTitle());
-			Icon ic = qquery.getIcon();
-			if(ic!=null) {
-				this.putValue(Action.SMALL_ICON, ic.get16());
-			}
-			query = qquery.getQuery();
-			this.insertText = insertText;
-		}
-		
-		@Override
-		public void actionPerformed(ActionEvent arg0) {
-			if(insertText) {
-				openDocumentsModel.insertSelectedText(query);
-			} else {
-				queryManager.sendQuery(query);
-			}
-		}
-	}
+    }
+
+
+    public void setHiddenNamespaces(Set<String> hiddenNS) {
+        this.hiddenNS = hiddenNS;
+        refreshGui();
+    }
+
+
+    private void addNodes(DefaultMutableTreeNode top, ServerModel sm,
+                          ServerObjectTree kdbServerObjects, Set<String> hiddenNS) {
+
+        String serverName = sm.getName();
+        String[] namespaces = kdbServerObjects.getNamespaces().toArray(new String[]{});
+        Arrays.sort(namespaces);
+
+        for (String ns : namespaces) {
+
+            if (!hiddenNS.contains(ns)) {
+
+                NamespaceNode nsNode = new NamespaceNode(ns, sm.getServerConfig());
+                DefaultMutableTreeNode nsTree = new DefaultMutableTreeNode(nsNode, true);
+                if (ns.equals(".")) {
+                    defaultNSnodes.add(nsTree);
+                }
+                for (TableSQE ed : kdbServerObjects.getTables(ns)) {
+
+                    DefaultMutableTreeNode branch = new DefaultMutableTreeNode(new ServerQEntityNode(serverName, ed));
+                    int i = ed.isPartitioned() ? 0 : 1;
+                    for (String cn : ed.getColNames()) {
+                        ColNode colNode = new ColNode(queryManager, adminModel, sm, ed, cn, i++ == 0);
+                        branch.add(new DefaultMutableTreeNode(colNode));
+                    }
+                    nsTree.add(branch);
+                }
+                for (ServerQEntity ed : kdbServerObjects.getViews(ns)) {
+                    nsTree.add(new DefaultMutableTreeNode(new ServerQEntityNode(serverName, ed)));
+                }
+                nsTree.add(getBranch(serverName, "Functions", kdbServerObjects.getFunctions(ns)));
+                nsTree.add(getBranch(serverName, "Variables", kdbServerObjects.getVariables(ns)));
+                top.add(nsTree);
+            }
+        }
+    }
+
+
+    /**
+     * Represents KDB namespace
+     */
+    private class NamespaceNode extends CustomNode {
+        private final String ns;
+        private final ServerConfig serverConfig;
+
+        public NamespaceNode(String ns, ServerConfig serverConfig) {
+            super(ns);
+            this.ns = ns;
+            this.serverConfig = serverConfig;
+        }
+
+        @Override
+        public void doSelectionAction() {
+            adminModel.setSelectedNamespace(serverConfig.getName(), ns);
+        }
+
+        @Override
+        public void addMenuItems(JPopupMenu menu) {
+            QQuery qq = new QQuery("Delete all variables from Namespace",
+                    Theme.CIcon.DELETE, "delete from `" + ns);
+            addScriptMenu(menu, ImmutableList.of(qq));
+        }
+    }
+
+
+    /**
+     * Tree node for an object that exists on the server
+     */
+    private class ServerQEntityNode extends CustomNode {
+
+        private final ServerQEntity sqe;
+        private final String serverName;
+
+        public ServerQEntityNode(String serverName, ServerQEntity sqe) {
+            super(sqe.getName(), sqe.getHtmlDoc(true), sqe.getIcon());
+            this.sqe = sqe;
+            this.serverName = serverName;
+            if (sqe.getType().isList()) {
+                setText("<html><b>" + sqe.getName() + "</b></html>");
+            }
+        }
+
+        @Override
+        public void doSelectionAction() {
+            adminModel.setSelectedElement(serverName, sqe.getNamespace(), sqe);
+        }
+
+        @Override
+        public void addMenuItems(JPopupMenu menu) {
+            addScriptMenu(menu, sqe.getQQueries());
+        }
+    }
+
+
+    /**
+     * Add a menu with the qquery actions and a separate sub menu that scripts them qQueries
+     * to the current editor.
+     *
+     * @param qQueries The q queries that will each have a menuItem added.
+     */
+    private void addScriptMenu(JPopupMenu menu, List<QQuery> qQueries) {
+        if (qQueries.size() > 0) {
+            JMenu scriptToWindowMenu = new JMenu("Script to Editor");
+            scriptToWindowMenu.setIcon(Theme.CIcon.PAGE_CODE.get16());
+            for (QQuery qquery : qQueries) {
+                menu.add(new JMenuItem(new ElementAction(qquery, false)));
+                scriptToWindowMenu.add(new JMenuItem(new ElementAction(qquery, true)));
+            }
+            menu.add(scriptToWindowMenu);
+        }
+    }
+
+    private DefaultMutableTreeNode getBranch(String serverName, String branchTitle,
+                                             List<ServerQEntity> elements) {
+
+        DefaultMutableTreeNode branch = new DefaultMutableTreeNode(branchTitle);
+        for (ServerQEntity ed : elements) {
+            branch.add(new DefaultMutableTreeNode(new ServerQEntityNode(serverName, ed)));
+        }
+        return branch;
+    }
+
+
+    private class ElementAction extends AbstractAction {
+
+        private static final long serialVersionUID = 1L;
+        private final String query;
+        private final boolean insertText;
+
+        public ElementAction(QQuery qquery, boolean insertText) {
+
+            super(qquery.getTitle());
+            Icon ic = qquery.getIcon();
+            if (ic != null) {
+                this.putValue(Action.SMALL_ICON, ic.get16());
+            }
+            query = qquery.getQuery();
+            this.insertText = insertText;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent arg0) {
+            if (insertText) {
+                openDocumentsModel.insertSelectedText(query);
+            } else {
+                queryManager.sendQuery(query);
+            }
+        }
+    }
 }
-
-
-
 
 
 //private static class UserPermissionsNode extends CustomNode {

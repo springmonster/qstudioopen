@@ -31,144 +31,151 @@ import com.timestored.qstudio.model.QueryResult;
 import com.timestored.theme.Theme;
 
 /**
- * Display the last {@link #FIXED_SIZE} queries sent 
- * and allow seeing old results and resending. 
+ * Display the last {@link #FIXED_SIZE} queries sent
+ * and allow seeing old results and resending.
  */
 class QueryHistoryPanel extends JPanel {
 
-	private static final long serialVersionUID = 1L;
-	private static final int FIXED_SIZE = 5;
-	
-	private final QueryManager queryManager;
-	private final List<QueryResult> history = new LinkedList<QueryResult>();
-	private final String[] colNames = new String[] { "Query", "Result", "Success" };
-	private final DefaultTableModel tableModel;
-	private final JPanel elementDetailPanel;
-	private final JXTable table;
-	
-	private int maxRowsShown = Integer.MAX_VALUE;
+    private static final long serialVersionUID = 1L;
+    private static final int FIXED_SIZE = 5;
 
-	QueryHistoryPanel(QueryManager queryManager) {
-		
-		this.queryManager = queryManager;
-		setLayout(new BorderLayout());
-		
-		tableModel = new DefaultTableModel(colNames, 0);
+    private final QueryManager queryManager;
+    private final List<QueryResult> history = new LinkedList<QueryResult>();
+    private final String[] colNames = new String[]{"Query", "Result", "Success"};
+    private final DefaultTableModel tableModel;
+    private final JPanel elementDetailPanel;
+    private final JXTable table;
 
-		table = Theme.getStripedTable(tableModel);
-		table.setEditable(false);
-		
-		final JScrollPane historyScrollPane = new JScrollPane(
-			ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, 
-				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		historyScrollPane.setViewportView(table);
+    private int maxRowsShown = Integer.MAX_VALUE;
 
-		elementDetailPanel = new JPanel(new BorderLayout());
-		
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-				historyScrollPane, elementDetailPanel);
-		splitPane.setResizeWeight(0.5);
-		add(splitPane, BorderLayout.CENTER);
-		
-		// show details of the selected history expression
-		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-			
-			@Override public void valueChanged(ListSelectionEvent arg0) {
-				int row = table.getSelectedRow();
-				if(row >= 0 && row < history.size()) {
-					display(row);
-				}
-			}
-		});
-		
-		table.addMouseListener(new PopupMenuMouseListener());
-		
-		queryManager.addQueryListener(new QueryAdapter() {
+    QueryHistoryPanel(QueryManager queryManager) {
 
-			@Override public void queryResultReturned(ServerConfig sc, QueryResult queryResult) {
-				addToHistory(queryResult);
-				display(history.size()-1);
-			}
-		});
-	}
+        this.queryManager = queryManager;
+        setLayout(new BorderLayout());
 
-	/** display the query result details for the selected history row **/
-	private void display(int row) {
-		final Component c = KDBResultPanel.getComponent(history.get(row), maxRowsShown);
-		
-		EventQueue.invokeLater(new Runnable() {
+        tableModel = new DefaultTableModel(colNames, 0);
 
-			@Override
-			public void run() {
-				elementDetailPanel.removeAll();
-				elementDetailPanel.add(c, BorderLayout.CENTER);
-				elementDetailPanel.revalidate();
-			}
-		});
-	}
-	private class PopupMenuMouseListener extends MouseAdapter {
-		
-		@Override public void mouseReleased(MouseEvent e) {
-			int r = table.rowAtPoint(e.getPoint());
-			if (r >= 0 && r < table.getRowCount()) {
-				table.setRowSelectionInterval(r, r);
-			} else {
-				table.clearSelection();
-			}
+        table = Theme.getStripedTable(tableModel);
+        table.setEditable(false);
 
-			final int row = table.getSelectedRow();
-			if (e.isPopupTrigger() && row >= 0 && 
-					row < history.size()) {
-				
-				JPopupMenu popup = new JPopupMenu();
-				JMenuItem resendExp = new JMenuItem("Resend", Theme.CIcon.SERVER_GO.get16());
-				resendExp.addActionListener(new ActionListener() {
+        final JScrollPane historyScrollPane = new JScrollPane(
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        historyScrollPane.setViewportView(table);
 
-					@Override
-					public void actionPerformed(ActionEvent arg0) {
-						queryManager.sendQuery(history.get(row).query);
-					}
-				});
-				popup.add(resendExp);
-				popup.show(e.getComponent(), e.getX(), e.getY());
-			}
-		}
-		
-		@Override
-		public void mouseClicked(MouseEvent e) {
-			int row = table.getSelectedRow();
-			if(e.getClickCount()==2 && row >= 0 &&  row < history.size()) {
-				queryManager.sendQuery(history.get(row).query);
-			}
-			super.mouseClicked(e);
-		}
-	}
+        elementDetailPanel = new JPanel(new BorderLayout());
 
-	private void addToHistory(QueryResult qr) {
-		if(history.size() == FIXED_SIZE) {
-			history.remove(0);
-		}
-		history.add(qr);
-		
-		if(tableModel.getRowCount() == FIXED_SIZE) {
-			tableModel.removeRow(0);
-		}
-		String[] rowData = new String[] { qr.query, 
-				KdbHelper.asLine(qr.k), 
-				qr.getResultType() };
-		tableModel.addRow(rowData);
-		
-		// scroll to bottom
-		EventQueue.invokeLater(new Runnable() {
-			@Override public void run() {
-				table.scrollRectToVisible(table.getCellRect(table.getRowCount()-1, 0, true));
-			}
-		});
-	}
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                historyScrollPane, elementDetailPanel);
+        splitPane.setResizeWeight(0.5);
+        add(splitPane, BorderLayout.CENTER);
 
-	void setMaximumRowsShown(int maxRowsShown) {
-		Preconditions.checkArgument(maxRowsShown > 0);
-		this.maxRowsShown = maxRowsShown;
-	}
+        // show details of the selected history expression
+        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+
+            @Override
+            public void valueChanged(ListSelectionEvent arg0) {
+                int row = table.getSelectedRow();
+                if (row >= 0 && row < history.size()) {
+                    display(row);
+                }
+            }
+        });
+
+        table.addMouseListener(new PopupMenuMouseListener());
+
+        queryManager.addQueryListener(new QueryAdapter() {
+
+            @Override
+            public void queryResultReturned(ServerConfig sc, QueryResult queryResult) {
+                addToHistory(queryResult);
+                display(history.size() - 1);
+            }
+        });
+    }
+
+    /**
+     * display the query result details for the selected history row
+     **/
+    private void display(int row) {
+        final Component c = KDBResultPanel.getComponent(history.get(row), maxRowsShown);
+
+        EventQueue.invokeLater(new Runnable() {
+
+            @Override
+            public void run() {
+                elementDetailPanel.removeAll();
+                elementDetailPanel.add(c, BorderLayout.CENTER);
+                elementDetailPanel.revalidate();
+            }
+        });
+    }
+
+    private class PopupMenuMouseListener extends MouseAdapter {
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            int r = table.rowAtPoint(e.getPoint());
+            if (r >= 0 && r < table.getRowCount()) {
+                table.setRowSelectionInterval(r, r);
+            } else {
+                table.clearSelection();
+            }
+
+            final int row = table.getSelectedRow();
+            if (e.isPopupTrigger() && row >= 0 &&
+                    row < history.size()) {
+
+                JPopupMenu popup = new JPopupMenu();
+                JMenuItem resendExp = new JMenuItem("Resend", Theme.CIcon.SERVER_GO.get16());
+                resendExp.addActionListener(new ActionListener() {
+
+                    @Override
+                    public void actionPerformed(ActionEvent arg0) {
+                        queryManager.sendQuery(history.get(row).query);
+                    }
+                });
+                popup.add(resendExp);
+                popup.show(e.getComponent(), e.getX(), e.getY());
+            }
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            int row = table.getSelectedRow();
+            if (e.getClickCount() == 2 && row >= 0 && row < history.size()) {
+                queryManager.sendQuery(history.get(row).query);
+            }
+            super.mouseClicked(e);
+        }
+    }
+
+    private void addToHistory(QueryResult qr) {
+        if (history.size() == FIXED_SIZE) {
+            history.remove(0);
+        }
+        history.add(qr);
+
+        if (tableModel.getRowCount() == FIXED_SIZE) {
+            tableModel.removeRow(0);
+        }
+        String[] rowData = new String[]{qr.query,
+                KdbHelper.asLine(qr.k),
+                qr.getResultType()};
+        tableModel.addRow(rowData);
+
+        // scroll to bottom
+        EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                table.scrollRectToVisible(table.getCellRect(table.getRowCount() - 1, 0, true));
+            }
+        });
+    }
+
+    void setMaximumRowsShown(int maxRowsShown) {
+        Preconditions.checkArgument(maxRowsShown > 0);
+        this.maxRowsShown = maxRowsShown;
+    }
 
 }

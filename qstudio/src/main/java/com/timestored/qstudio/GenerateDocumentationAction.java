@@ -27,48 +27,49 @@ import com.timestored.theme.Theme;
  */
 public class GenerateDocumentationAction extends AbstractAction {
 
-	private static final Logger LOG = Logger.getLogger(GenerateDocumentationAction.class.getName());
-	
-	private final OpenDocumentsModel openDocumentsModel;
-	private File lastSelectedDocGenFolder;
-	
-	
-	public GenerateDocumentationAction(final OpenDocumentsModel openDocumentsModel) {
-		super(Msg.get(Key.GENERATE), Theme.CIcon.TEXT_HTML.get16());
-		this.openDocumentsModel = Preconditions.checkNotNull(openDocumentsModel);		
-	}
-	
-	@Override public void actionPerformed(ActionEvent ae) {
-		if (QLicenser.requestPermission(Section.QDOC)) {
-			runQDocAction();
-		}
-	}
-	
+    private static final Logger LOG = Logger.getLogger(GenerateDocumentationAction.class.getName());
 
-	private void runQDocAction() {
-		
-		JFileChooser fc = lastSelectedDocGenFolder==null ? new JFileChooser() : new JFileChooser(lastSelectedDocGenFolder);
-		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		fc.setDialogTitle(Msg.get(Key.SELECT_DOC_DIR));
-		fc.setDialogType(JFileChooser.SAVE_DIALOG);
-		fc.setApproveButtonText(Msg.get(Key.GENERATE2));
-		
-		if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
-			lastSelectedDocGenFolder = fc.getSelectedFile();
-			List<Document> docs = openDocumentsModel.getDocuments();
-			List<String> errors = HtmlPqfOutputter.output(docs, lastSelectedDocGenFolder, null);
-			if(errors.size()>0) {
-				String title = Msg.get(Key.ERROR_GENERATING_DOCS);
-				String message = Joiner.on("\r\n").join(errors);
-				JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
-			} else {
-				File f = new File(lastSelectedDocGenFolder.getAbsolutePath() 
-						+ File.separator + "index.html");
-				SwingUtils.offerToOpenFile(Msg.get(Key.DOCS_GENERATED), f, 
-						Msg.get(Key.OPEN_DOCS_NOW), Msg.get(Key.CLOSE));
-			}
-		} else {
-			LOG.info("Generate documentation command cancelled by user.");
-		}
-	}
+    private final OpenDocumentsModel openDocumentsModel;
+    private File lastSelectedDocGenFolder;
+
+
+    public GenerateDocumentationAction(final OpenDocumentsModel openDocumentsModel) {
+        super(Msg.get(Key.GENERATE), Theme.CIcon.TEXT_HTML.get16());
+        this.openDocumentsModel = Preconditions.checkNotNull(openDocumentsModel);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent ae) {
+        if (QLicenser.requestPermission(Section.QDOC)) {
+            runQDocAction();
+        }
+    }
+
+
+    private void runQDocAction() {
+
+        JFileChooser fc = lastSelectedDocGenFolder == null ? new JFileChooser() : new JFileChooser(lastSelectedDocGenFolder);
+        fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        fc.setDialogTitle(Msg.get(Key.SELECT_DOC_DIR));
+        fc.setDialogType(JFileChooser.SAVE_DIALOG);
+        fc.setApproveButtonText(Msg.get(Key.GENERATE2));
+
+        if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            lastSelectedDocGenFolder = fc.getSelectedFile();
+            List<Document> docs = openDocumentsModel.getDocuments();
+            List<String> errors = HtmlPqfOutputter.output(docs, lastSelectedDocGenFolder, null);
+            if (errors.size() > 0) {
+                String title = Msg.get(Key.ERROR_GENERATING_DOCS);
+                String message = Joiner.on("\r\n").join(errors);
+                JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
+            } else {
+                File f = new File(lastSelectedDocGenFolder.getAbsolutePath()
+                        + File.separator + "index.html");
+                SwingUtils.offerToOpenFile(Msg.get(Key.DOCS_GENERATED), f,
+                        Msg.get(Key.OPEN_DOCS_NOW), Msg.get(Key.CLOSE));
+            }
+        } else {
+            LOG.info("Generate documentation command cancelled by user.");
+        }
+    }
 }

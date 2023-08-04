@@ -13,44 +13,45 @@ import com.timestored.tscore.persistance.PersistanceInterface;
  */
 class WindowSizePersister {
 
-	private final PersistanceInterface persistance;
-	private final Persistance.Key key;
-	
-	WindowSizePersister(final JDialog dialog, 
-			final PersistanceInterface persistance, 
-			final Persistance.Key key) {
+    private final PersistanceInterface persistance;
+    private final Persistance.Key key;
 
-		this.persistance = persistance;
-		this.key = key;
-		
-		dialog.addComponentListener(new ComponentAdapter() {
-			@Override public void componentResized(ComponentEvent e) {
-				persistance.put(key, convertToString(dialog.getSize()));
-			}
-		});
-	}
+    WindowSizePersister(final JDialog dialog,
+                        final PersistanceInterface persistance,
+                        final Persistance.Key key) {
 
-	private String convertToString(Dimension size) {
-		return size.width + "," + size.height;
-	}
+        this.persistance = persistance;
+        this.key = key;
 
-	private Dimension convertToDimension(String val) {
-		String[] r = val.split(",");
-		if(r.length!=2) {
-			throw new IllegalArgumentException("can't read dimensions");
-		}
-		return new Dimension(Integer.parseInt(r[0]), Integer.parseInt(r[1]));
-	}
-	
-	public Dimension getDimension(Dimension defaultDim) {
-		String d = persistance.get(key, "");
-		if(!d.equals("")) {
-			try {
-				return convertToDimension(d);
-			} catch (Exception e) {
-				// ignore and fall through
-			}
-		}
-		return defaultDim; 
-	}
+        dialog.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                persistance.put(key, convertToString(dialog.getSize()));
+            }
+        });
+    }
+
+    private String convertToString(Dimension size) {
+        return size.width + "," + size.height;
+    }
+
+    private Dimension convertToDimension(String val) {
+        String[] r = val.split(",");
+        if (r.length != 2) {
+            throw new IllegalArgumentException("can't read dimensions");
+        }
+        return new Dimension(Integer.parseInt(r[0]), Integer.parseInt(r[1]));
+    }
+
+    public Dimension getDimension(Dimension defaultDim) {
+        String d = persistance.get(key, "");
+        if (!d.equals("")) {
+            try {
+                return convertToDimension(d);
+            } catch (Exception e) {
+                // ignore and fall through
+            }
+        }
+        return defaultDim;
+    }
 }

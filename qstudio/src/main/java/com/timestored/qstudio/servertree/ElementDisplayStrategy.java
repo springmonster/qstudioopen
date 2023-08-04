@@ -11,5 +11,5 @@ import com.timestored.qstudio.model.AdminModel;
  * Allows displaying details about admin models selected element.
  */
 interface ElementDisplayStrategy {
-	public Component getPanel(AdminModel adminModel) throws IOException, KException;
+    public Component getPanel(AdminModel adminModel) throws IOException, KException;
 }

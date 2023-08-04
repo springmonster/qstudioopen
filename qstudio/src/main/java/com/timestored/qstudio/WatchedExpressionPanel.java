@@ -33,200 +33,203 @@ import com.timestored.theme.Theme;
  */
 class WatchedExpressionPanel extends JPanel {
 
-	private static final long serialVersionUID = 1L;
-	
-	private final QueryManager queryManager;
-	private final JPanel elementListPanel;
-	private final JPanel elementDetailPanel;
+    private static final long serialVersionUID = 1L;
+
+    private final QueryManager queryManager;
+    private final JPanel elementListPanel;
+    private final JPanel elementDetailPanel;
 
 
-	WatchedExpressionPanel(QueryManager queryManager) {
-		this.queryManager = queryManager;
-		setLayout(new BorderLayout());
-		
-		elementListPanel = new JPanel(new BorderLayout());
-		elementDetailPanel = new JPanel(new BorderLayout());
-		
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-				elementListPanel, elementDetailPanel);
-		splitPane.setResizeWeight(0.5);
-		add(splitPane, BorderLayout.CENTER);
-		
-		// we only care about watched expressions
-		queryManager.addQueryListener(new QueryAdapter() {
-			@Override public void watchedExpressionsModified() {
-				refreshExpressions();
-			}
+    WatchedExpressionPanel(QueryManager queryManager) {
+        this.queryManager = queryManager;
+        setLayout(new BorderLayout());
 
-			@Override public void watchedExpressionsRefreshed() {
-				refreshExpressions();
-			}
-		});
-		refreshExpressions();
-	}
+        elementListPanel = new JPanel(new BorderLayout());
+        elementDetailPanel = new JPanel(new BorderLayout());
 
-	/**
-	 * Recreate table listing watchables etc.
-	 */
-	private void refreshExpressions() {
-		
-		final List<WatchedExpression> watchedExps = queryManager.getWatchedExpressions();
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                elementListPanel, elementDetailPanel);
+        splitPane.setResizeWeight(0.5);
+        add(splitPane, BorderLayout.CENTER);
 
-		TableModel model = new WatchedExpressionTableModel(queryManager);
-		final JXTable table = new JXTable(model);
+        // we only care about watched expressions
+        queryManager.addQueryListener(new QueryAdapter() {
+            @Override
+            public void watchedExpressionsModified() {
+                refreshExpressions();
+            }
 
-		if(!watchedExps.isEmpty()) {
-			// allow deletion upon right click
-			table.addMouseListener(new DeleteRowMouseAdapter(table, queryManager));
-			
-			// show details of the selected watched expression
-			table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-				
-				@Override public void valueChanged(ListSelectionEvent arg0) {
-					int row = table.getSelectedRow();
-					if(row >= 0 && row < watchedExps.size()) {
-						Object res = watchedExps.get(row).getLastResult();
-						Component resultComponent = KdbHelper.getComponent(res);
-						
-						elementDetailPanel.removeAll();
-						elementDetailPanel.add(resultComponent, BorderLayout.CENTER);
-						elementDetailPanel.revalidate();
-					}
-				}
-			});
-		}
-		
-		EventQueue.invokeLater(new Runnable() {
-			
-			@Override
-			public void run() {
-				elementListPanel.removeAll();
-				elementListPanel.add(new JScrollPane(table), BorderLayout.CENTER);
-				elementListPanel.revalidate();
-			}
-		});
-		
-	}
+            @Override
+            public void watchedExpressionsRefreshed() {
+                refreshExpressions();
+            }
+        });
+        refreshExpressions();
+    }
 
-	/**
-	 * table with one watched expression per line, that also allows adding more.
-	 */
-	private static class WatchedExpressionTableModel extends AbstractTableModel {
+    /**
+     * Recreate table listing watchables etc.
+     */
+    private void refreshExpressions() {
 
-		private static final long serialVersionUID = 1L;
-		private static final String[] colNames = new String[] { "Expression", "value" };
-		private static final String DEF_TEXT = "Add Expression +"; 
-		
-		private final QueryManager queryManager;
-		private final List<WatchedExpression> watchedExps;
-		 
-		
-		public WatchedExpressionTableModel(QueryManager queryManager) {
-			this.queryManager = queryManager;
-			watchedExps = queryManager.getWatchedExpressions();
-		}
-		
-		@Override
-		public String getColumnName(int column) {
-			return colNames[column];
-		}
-		 
-		@Override
-		public int getColumnCount() {
-			return colNames.length;
-		}
+        final List<WatchedExpression> watchedExps = queryManager.getWatchedExpressions();
 
-		@Override
-		public int getRowCount() {
-			return watchedExps.size() + 1;
-		}
+        TableModel model = new WatchedExpressionTableModel(queryManager);
+        final JXTable table = new JXTable(model);
 
-		@Override
-		public Object getValueAt(int row, int col) {
-			if(row < watchedExps.size()) {
-				WatchedExpression we = watchedExps.get(row);
-				if(col == 0) {
-					return we.getExpression();
-				} else if(col == 1) {
-			    	String res = KdbHelper.asLine(we.getLastResult());
-					return res==null ? "" : res;
-				}
-			} else {
-				if(col == 0) {
-					return DEF_TEXT;
-				}
-			}
-			return "";
-		}
-		
-		@Override
-		public void setValueAt(Object value, int row, int col) {
-			String exp = ((String) value).trim();
-			if(exp.length()>0 && !exp.equals(DEF_TEXT)) {
-				if(row < watchedExps.size()) {
-					queryManager.setWatchedExpression(row, (String) value);
-				} else if(row == watchedExps.size()) {
-					queryManager.addWatchedExpression((String)value);
-				}
-			}
-			super.setValueAt(value, row, col);
-		}
-		
-		@Override
-		public boolean isCellEditable(int row, int col) {
-			return col < 1;
-		}
-	}	
-	
-	
-	/**
-	 * Allow removing a watched expression from right click popup menu on table.
-	 */
-	private static class DeleteRowMouseAdapter extends MouseAdapter {
+        if (!watchedExps.isEmpty()) {
+            // allow deletion upon right click
+            table.addMouseListener(new DeleteRowMouseAdapter(table, queryManager));
 
-		private final JXTable table;
-		private final QueryManager queryManager;
+            // show details of the selected watched expression
+            table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 
-		public DeleteRowMouseAdapter(JXTable table, QueryManager queryManager) {
-			this.table = table;
-			this.queryManager = queryManager;
-		}
+                @Override
+                public void valueChanged(ListSelectionEvent arg0) {
+                    int row = table.getSelectedRow();
+                    if (row >= 0 && row < watchedExps.size()) {
+                        Object res = watchedExps.get(row).getLastResult();
+                        Component resultComponent = KdbHelper.getComponent(res);
 
-		@Override
-		public void mouseReleased(MouseEvent e) {
-			int r = table.rowAtPoint(e.getPoint());
-			if (r >= 0 && r < table.getRowCount()) {
-				table.setRowSelectionInterval(r, r);
-			} else {
-				table.clearSelection();
-			}
+                        elementDetailPanel.removeAll();
+                        elementDetailPanel.add(resultComponent, BorderLayout.CENTER);
+                        elementDetailPanel.revalidate();
+                    }
+                }
+            });
+        }
 
-			final int rowindex = table.getSelectedRow();
-			if (e.isPopupTrigger() && rowindex >= 0
-					&& rowindex < queryManager.getWatchedExpressions().size()) {
-				JPopupMenu popup = new JPopupMenu();
-				JMenuItem deleteExp = new JMenuItem("Remove", Theme.CIcon.TABLE_ROW_DELETE.get16());
-				deleteExp.addActionListener(new ActionListener() {
+        EventQueue.invokeLater(new Runnable() {
 
-					@Override
-					public void actionPerformed(ActionEvent arg0) {
-						queryManager.removeWatchedExpression(rowindex);
-					}
-				});
-				JMenuItem deleteAll = new JMenuItem("Remove All", Theme.CIcon.DELETE.get16());
-				deleteAll.addActionListener(new ActionListener() {
+            @Override
+            public void run() {
+                elementListPanel.removeAll();
+                elementListPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+                elementListPanel.revalidate();
+            }
+        });
 
-					@Override
-					public void actionPerformed(ActionEvent arg0) {
-						queryManager.clearWatchedExpressions();
-					}
-				});
-				popup.add(deleteExp);
-				popup.add(deleteAll);
-				popup.show(e.getComponent(), e.getX(), e.getY());
-			}
-		}
-	}
-	
+    }
+
+    /**
+     * table with one watched expression per line, that also allows adding more.
+     */
+    private static class WatchedExpressionTableModel extends AbstractTableModel {
+
+        private static final long serialVersionUID = 1L;
+        private static final String[] colNames = new String[]{"Expression", "value"};
+        private static final String DEF_TEXT = "Add Expression +";
+
+        private final QueryManager queryManager;
+        private final List<WatchedExpression> watchedExps;
+
+
+        public WatchedExpressionTableModel(QueryManager queryManager) {
+            this.queryManager = queryManager;
+            watchedExps = queryManager.getWatchedExpressions();
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return colNames[column];
+        }
+
+        @Override
+        public int getColumnCount() {
+            return colNames.length;
+        }
+
+        @Override
+        public int getRowCount() {
+            return watchedExps.size() + 1;
+        }
+
+        @Override
+        public Object getValueAt(int row, int col) {
+            if (row < watchedExps.size()) {
+                WatchedExpression we = watchedExps.get(row);
+                if (col == 0) {
+                    return we.getExpression();
+                } else if (col == 1) {
+                    String res = KdbHelper.asLine(we.getLastResult());
+                    return res == null ? "" : res;
+                }
+            } else {
+                if (col == 0) {
+                    return DEF_TEXT;
+                }
+            }
+            return "";
+        }
+
+        @Override
+        public void setValueAt(Object value, int row, int col) {
+            String exp = ((String) value).trim();
+            if (exp.length() > 0 && !exp.equals(DEF_TEXT)) {
+                if (row < watchedExps.size()) {
+                    queryManager.setWatchedExpression(row, (String) value);
+                } else if (row == watchedExps.size()) {
+                    queryManager.addWatchedExpression((String) value);
+                }
+            }
+            super.setValueAt(value, row, col);
+        }
+
+        @Override
+        public boolean isCellEditable(int row, int col) {
+            return col < 1;
+        }
+    }
+
+
+    /**
+     * Allow removing a watched expression from right click popup menu on table.
+     */
+    private static class DeleteRowMouseAdapter extends MouseAdapter {
+
+        private final JXTable table;
+        private final QueryManager queryManager;
+
+        public DeleteRowMouseAdapter(JXTable table, QueryManager queryManager) {
+            this.table = table;
+            this.queryManager = queryManager;
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            int r = table.rowAtPoint(e.getPoint());
+            if (r >= 0 && r < table.getRowCount()) {
+                table.setRowSelectionInterval(r, r);
+            } else {
+                table.clearSelection();
+            }
+
+            final int rowindex = table.getSelectedRow();
+            if (e.isPopupTrigger() && rowindex >= 0
+                    && rowindex < queryManager.getWatchedExpressions().size()) {
+                JPopupMenu popup = new JPopupMenu();
+                JMenuItem deleteExp = new JMenuItem("Remove", Theme.CIcon.TABLE_ROW_DELETE.get16());
+                deleteExp.addActionListener(new ActionListener() {
+
+                    @Override
+                    public void actionPerformed(ActionEvent arg0) {
+                        queryManager.removeWatchedExpression(rowindex);
+                    }
+                });
+                JMenuItem deleteAll = new JMenuItem("Remove All", Theme.CIcon.DELETE.get16());
+                deleteAll.addActionListener(new ActionListener() {
+
+                    @Override
+                    public void actionPerformed(ActionEvent arg0) {
+                        queryManager.clearWatchedExpressions();
+                    }
+                });
+                popup.add(deleteExp);
+                popup.add(deleteAll);
+                popup.show(e.getComponent(), e.getX(), e.getY());
+            }
+        }
+    }
+
 
 }

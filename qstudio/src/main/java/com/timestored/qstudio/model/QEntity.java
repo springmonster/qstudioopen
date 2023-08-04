@@ -7,5 +7,5 @@ import com.timestored.qdoc.DocumentedEntity;
  */
 public interface QEntity extends DocumentedEntity {
 
-	public abstract String getNamespace();
+    public abstract String getNamespace();
 }
